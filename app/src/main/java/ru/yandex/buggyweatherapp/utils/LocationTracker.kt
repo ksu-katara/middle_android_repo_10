@@ -21,12 +21,12 @@ class LocationTracker private constructor(
         
         fun getInstance(context: Context): LocationTracker {
             return instance ?: synchronized(this) {
-                instance ?: LocationTracker(context).also { instance = it }
+                instance ?: LocationTracker(context.applicationContext).also { instance = it }
             }
         }
     }
     
-    
+
     private val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
     
     
@@ -59,8 +59,8 @@ class LocationTracker private constructor(
             
             locationManager.requestLocationUpdates(
                 LocationManager.GPS_PROVIDER,
-                5000, // 5 секунд
-                10f, // 10 метров
+                5000,
+                10f,
                 locationListener
             )
             
@@ -72,6 +72,18 @@ class LocationTracker private constructor(
         }
     }
     
+    // ОШИБКА 10
+    fun removeListener(listener: (ru.yandex.buggyweatherapp.model.Location) -> Unit) {
+        listeners.remove(listener)
+    }
+    
+    fun stopTracking() {
+        try {
+            locationManager.removeUpdates(locationListener)
+        } catch (e: Exception) {
+            Log.e("LocationTracker", "Error stopping location tracking", e)
+        }
+    }
     
     fun addListener(listener: (ru.yandex.buggyweatherapp.model.Location) -> Unit) {
         listeners.add(listener)

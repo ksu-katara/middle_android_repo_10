@@ -66,7 +66,8 @@ class LocationRepository(
                 .setMinUpdateIntervalMillis(5000)
                 .build()
             
-            val locationCallback = object : LocationCallback() {
+            lateinit var locationCallbackObj: LocationCallback
+            locationCallbackObj = object : LocationCallback() {
                 override fun onLocationResult(locationResult: LocationResult) {
                     locationResult.lastLocation?.let { location ->
                         val userLocation = Location(
@@ -84,7 +85,7 @@ class LocationRepository(
             
             fusedLocationClient.requestLocationUpdates(
                 locationRequest,
-                locationCallback,
+                locationCallbackObj,
                 Looper.getMainLooper()
             )
         } catch (e: SecurityException) {

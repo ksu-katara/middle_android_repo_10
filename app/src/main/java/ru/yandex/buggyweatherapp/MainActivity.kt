@@ -22,17 +22,16 @@ import ru.yandex.buggyweatherapp.viewmodel.WeatherViewModel
 
 class MainActivity : ComponentActivity() {
     
-    private val weatherViewModel = WeatherViewModel()
+    // ОШИБКА 1
+    private val weatherViewModel: WeatherViewModel by viewModels()
     
     private val locationPermissionRequest = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
         when {
+            permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true ||
             permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true -> {
-                
-            }
-            permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true -> {
-                
+                weatherViewModel.initialize(this@MainActivity)
             }
             else -> {
                 
@@ -76,10 +75,8 @@ class MainActivity : ComponentActivity() {
         }
     }
     
-    
     override fun onDestroy() {
         super.onDestroy()
-        
     }
 }
 
@@ -87,7 +84,6 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun WeatherAppPreview() {
     BuggyWeatherAppTheme {
-        
         Text("Weather App Preview")
     }
 }
