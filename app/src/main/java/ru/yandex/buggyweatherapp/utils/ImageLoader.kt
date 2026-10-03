@@ -4,8 +4,11 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.widget.ImageView
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.lang.ref.WeakReference
 import java.net.URL
 import java.util.concurrent.ConcurrentHashMap
 
@@ -13,23 +16,20 @@ object ImageLoader {
     
     private lateinit var appContext: Context
     
-    
     private val imageCache = ConcurrentHashMap<String, Bitmap>()
     
-    
-    private val viewReferences = HashMap<String, ImageView>()
+    // ОШИБКА 9
+    private val viewReferences = ConcurrentHashMap<String, WeakReference<ImageView>>()
     
     fun initialize(context: Context) {
         appContext = context.applicationContext
     }
-    
     
     suspend fun loadImage(url: String): Bitmap? {
         return if (imageCache.containsKey(url)) {
             imageCache[url]
         } else {
             try {
-                
                 val bitmap = withContext(Dispatchers.IO) {
                     val connection = URL(url).openConnection()
                     connection.connectTimeout = 5000
@@ -37,21 +37,20 @@ object ImageLoader {
                     connection.connect()
                     
                     val inputStream = connection.getInputStream()
-                    val bitmap = BitmapFactory.decodeStream(inputStream)
+                    val decoded = BitmapFactory.decodeStream(inputStream)
                     inputStream.close()
                     
-                    
-                    imageCache[url] = bitmap
-                    bitmap
+                    if (decoded != null) {
+                        imageCache[url] = decoded
+                    }
+                    decoded
                 }
                 bitmap
             } catch (e: Exception) {
-                
                 null
             }
         }
     }
-    
     
     fun loadImageSync(url: String): Bitmap? {
         return if (imageCache.containsKey(url)) {
@@ -67,7 +66,9 @@ object ImageLoader {
                 val bitmap = BitmapFactory.decodeStream(inputStream)
                 inputStream.close()
                 
-                imageCache[url] = bitmap
+                if (bitmap != null) {
+                    imageCache[url] = bitmap
+                }
                 bitmap
             } catch (e: Exception) {
                 null
@@ -75,24 +76,21 @@ object ImageLoader {
         }
     }
     
-    
     fun loadInto(url: String, imageView: ImageView) {
-        viewReferences[url] = imageView
+        viewReferences[url] = WeakReference(imageView)
         
         if (imageCache.containsKey(url)) {
             imageView.setImageBitmap(imageCache[url])
         } else {
-            
-            Thread {
+            CoroutineScope(Dispatchers.IO).launch {
                 val bitmap = loadImageSync(url)
-                
-                
-                imageView.post {
-                    imageView.setImageBitmap(bitmap)
+                withContext(Dispatchers.Main) {
+                    val targetView = viewReferences[url]?.get()
+                    if (targetView != null && bitmap != null) {
+                        targetView.setImageBitmap(bitmap)
+                    }
                 }
-            }.start()
+            }
         }
     }
-    
-    
 }

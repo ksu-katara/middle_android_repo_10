@@ -1,7 +1,6 @@
 package ru.yandex.buggyweatherapp.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -43,19 +42,13 @@ import ru.yandex.buggyweatherapp.viewmodel.WeatherViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WeatherScreen(viewModel: WeatherViewModel, modifier: Modifier = Modifier) {
-    
     val context = LocalContext.current
     
-    
+    // ОШИБКА 14
     DisposableEffect(Unit) {
-        
-        viewModel.initialize(context)
-        
-        onDispose {
-            
-        }
+        viewModel.initialize(context.applicationContext)
+        onDispose { }
     }
-    
     
     val weatherData by viewModel.weatherData.observeAsState()
     val isLoading by viewModel.isLoading.observeAsState(false)
@@ -77,7 +70,6 @@ fun WeatherScreen(viewModel: WeatherViewModel, modifier: Modifier = Modifier) {
             modifier = Modifier.fillMaxWidth(),
             trailingIcon = {
                 IconButton(onClick = { 
-                    
                     viewModel.searchWeatherByCity(searchText) 
                 }) {
                     Icon(Icons.Default.Search, contentDescription = "Search")
@@ -91,11 +83,9 @@ fun WeatherScreen(viewModel: WeatherViewModel, modifier: Modifier = Modifier) {
         
         Spacer(modifier = Modifier.height(16.dp))
         
-        
         if (isLoading && weatherData == null) {
             Text("Loading weather data...")
         }
-        
         
         error?.let {
             Text(
@@ -162,7 +152,6 @@ fun WeatherCard(
             
             Spacer(modifier = Modifier.height(8.dp))
             
-            
             Text(
                 text = "Temperature: " + weather.temperature.toString() + "°C",
                 style = MaterialTheme.typography.bodyLarge
@@ -194,12 +183,10 @@ fun WeatherCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                
                 Text(
                     text = "Sunrise: " + WeatherIconMapper.formatTimestamp(weather.sunriseTime),
                     style = MaterialTheme.typography.bodySmall
                 )
-                
                 Text(
                     text = "Sunset: " + WeatherIconMapper.formatTimestamp(weather.sunsetTime),
                     style = MaterialTheme.typography.bodySmall

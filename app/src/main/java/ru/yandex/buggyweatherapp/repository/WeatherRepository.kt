@@ -2,46 +2,42 @@ package ru.yandex.buggyweatherapp.repository
 
 import android.util.Log
 import com.google.gson.JsonObject
-import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import ru.yandex.buggyweatherapp.api.RetrofitInstance
 import ru.yandex.buggyweatherapp.model.Location
 import ru.yandex.buggyweatherapp.model.WeatherData
-import java.util.Date
 
 class WeatherRepository {
     
-    
     private val weatherApi = RetrofitInstance.weatherApi
-    
-    
     private var cachedWeatherData: WeatherData? = null
     
-    
     fun getWeatherData(location: Location, callback: (WeatherData?, Exception?) -> Unit) {
-        
         val call = weatherApi.getCurrentWeather(location.latitude, location.longitude)
         
-        
-        try {
-            
-            val response = call.execute()
-            
-            if (response.isSuccessful) {
-                val weatherData = parseWeatherData(response.body()!!, location)
-                cachedWeatherData = weatherData
-                callback(weatherData, null)
-            } else {
-                
-                callback(null, Exception("API Error: ${response.code()}"))
+        // ОШИБКА 7
+        call.enqueue(object : Callback<JsonObject> {
+            override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
+                if (response.isSuccessful && response.body() != null) {
+                    try {
+                        val weatherData = parseWeatherData(response.body()!!, location)
+                        cachedWeatherData = weatherData
+                        callback(weatherData, null)
+                    } catch (e: Exception) {
+                        callback(null, e)
+                    }
+                } else {
+                    callback(null, Exception("API Error: ${response.code()}"))
+                }
             }
-        } catch (e: Exception) {
-            
-            Log.e("WeatherRepository", "Error fetching weather", e)
-            callback(null, e)
-        }
+
+            override fun onFailure(call: Call<JsonObject>, t: Throwable) {
+                Log.e("WeatherRepository", "Error fetching weather", t)
+                callback(null, Exception(t))
+            }
+        })
     }
     
     fun getWeatherByCity(cityName: String, callback: (WeatherData?, Exception?) -> Unit) {
@@ -54,7 +50,6 @@ class WeatherRepository {
                         val weatherData = parseWeatherData(json, location)
                         callback(weatherData, null)
                     } catch (e: Exception) {
-                        
                         callback(null, e)
                     }
                 } else {
@@ -68,9 +63,7 @@ class WeatherRepository {
         })
     }
     
-    
     private fun parseWeatherData(json: JsonObject, location: Location): WeatherData {
-        
         val main = json.getAsJsonObject("main")
         val wind = json.getAsJsonObject("wind")
         val sys = json.getAsJsonObject("sys")
